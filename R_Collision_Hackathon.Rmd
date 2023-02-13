@@ -1,5 +1,5 @@
 ---
-title: "IE_6600_Sec01_Group13_Hackathon"
+title: "Hackathon"
 author: "Geet Singh Sethi"
 date: "2023-02-12"
 output: html_document
