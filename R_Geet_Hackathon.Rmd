@@ -1,0 +1,344 @@
+---
+title: "IE_6600_Sec01_Group13_Hackathon"
+author: "Geet Singh Sethi"
+date: "2023-02-12"
+output: html_document
+---
+
+
+# **Introduction and Problem Statement:**
+Rapid Urbanization has led to an unforeseeable growth in the use of motor vehicles as a mode of transportation. The increased use of motor vehicles has led to substantially more road trafficking accidents or traffic collisions over the past few decades causing significant global concerns. In 2022, 312 individuals died in road accidents, which is a 29% rise over the previous year [1]. Additionally, accidents are unpredictable as they occur in a matter of seconds and are primarily unplanned. Therefore collecting exact data on collisions is a  difficult task. All data on collisions is compiled after it has happened and can be very scattered due to the nature of  the event.\
+
+From a Statista data set it was reported that in 2019 over 228.7 million people are holding valid driver's licenses. The collisions are caused by the level of traffic and in 2019 there were 12.5 million reported traffic collisions in the US [2].\
+
+The data set we are using reports traffic collisions in the city of Los Angeles, California from 2010 through 2023. The data consist of  587194 data points (rows) and 18 columns. This data set has some inaccuracies with some missing data values as well as the address fields are set to the nearest hundred blocks of the incident to ensure privacy [3]. Using the data set of Traffic collisions in LA, we were able to analyze the time, age, gender, area, etc. of the related collision occurrence. We compared the number of accidents to ages to know which age group tends to get into collision as well as which areas, times of the year, and hours of the day are especially dangerous.\
+
+
+The data file was downloaded from: https://www.statista.com/topics/3708/road-accidents-in-the-us/#topicOverview
+
+The Columns in the data are as follows:\
+\n DR.Number: Division of records numbers\
+Date.Reported: The date the collision was reported\
+Date.Occurred: The date the collision occurred\
+Time.Occurred: The time which the collision occurred in military time\
+Area.ID: The LAPD has 21 Community Police Stations referred to as Geographic Areas within the department numbered from 1-21.\
+Area.Name: The corresponding area name of the area ID/  
+Reporting.District: A code used in producing reports to group data into geographic sub-areas within an area.\
+Crime.Code: The code number of the crime. All being "977" as they are the same crime.\
+Crime.Code.Description: The description of the crime code all being "Traffic Collision."\
+MO.Codes: Activities associated with the suspect in commission of the crime.\             
+Victim.Age: Age of the victim. \          
+Victim.Sex: Sex of the victim. \
+Victim.Descent: Descent of the victim.\
+Premise.Code: The type of structure or location where the incident took place.\
+Premise.Description: Defines the premise code.\
+Address: Address of where the collision happened rounded to the nearest hundred block.\         
+Cross.Street: Cross Street of rounded Address.\
+Location: Longitude and latitude.\
+
+**_Please hover over the graphs to learn more about the statistics._**
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(scales)
+library(corrplot)
+library(ggalluvial)
+library(treemapify)
+library(plotly)
+library(RColorBrewer)
+library(ggalluvial)
+library(lubridate)
+library(dplyr)
+library(stringr)
+library(osmdata)
+library(ggmap)
+library(viridis)
+
+traffic_url =('/Users/geet/Downloads/Traffic_Collision_Data_from_2010_to_Present.csv')
+
+df_traffic <- read.csv(file=traffic_url, header= 1, sep = ",")
+```
+## **Section 1: Exploring the ages, gender and race of individuals involved in the collision: **
+
+**Questions 1: What is the distribution of gender and age and which has the maximum number of collisions in LA?**
+```{r Histogram, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+traffic_url =('/Users/geet/Downloads/Traffic_Collision_Data_from_2010_to_Present.csv')
+df_traffic <- read.csv(file=traffic_url, header= 1, sep = ",")
+
+
+df_traffic$Victim.Sex[df_traffic$Victim.Sex == 'M'] <- 'Male'
+df_traffic$Victim.Sex[df_traffic$Victim.Sex == 'F'] <- 'Female'
+df_traffic$Victim.Sex[df_traffic$Victim.Sex == 'N'] <- 'Unkown'
+df_traffic$Victim.Sex[df_traffic$Victim.Sex == ''] <- 'Unkown'
+df_traffic$Victim.Sex[df_traffic$Victim.Sex == 'H'] <- 'Unkown'
+df_traffic$Victim.Sex[df_traffic$Victim.Sex == 'X'] <- 'Unkown'
+
+
+
+histogram <- plot_ly(data = df_traffic, x= ~Victim.Age, color = "YlOrRd" , showscale = FALSE,marker = list(line = list(color = 'white',
+width = 2))) |> layout(xaxis = list(title = "Victim Age",showgrid = TRUE), yaxis = list(title = "Count"), title =  "Collisions by Age")
+
+                               
+histogram
+
+```
+The histogram above has an x-axis representing the ages and the y-axis representing the number of collisions this histogram shows the rate at which a specific age has had a collision. From the chart we are able to see that people age 30 were the ones to undergo more collisions with a count of around 17k another discovery made in this visualization was the ages 22 to 25 had a collision count of around 16k, and ages 35-40 and 50 had a similar collision count of around 14k. There is a shocking increase in the count at age 99 after a gradually decreased trend.
+```{r Box and Whisker, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+traffic_url =('/Users/geet/Downloads/Traffic_Collision_Data_from_2010_to_Present.csv')
+df_traffic <- read.csv(file=traffic_url, header= 1, sep = ",")
+
+df_traffic$Victim.Sex[df_traffic$Victim.Sex == 'M'] <- 'Male'
+df_traffic$Victim.Sex[df_traffic$Victim.Sex == 'F'] <- 'Female'
+df_traffic$Victim.Sex[df_traffic$Victim.Sex == 'N'] <- 'Unknow'
+df_traffic$Victim.Sex[df_traffic$Victim.Sex == ''] <- 'Unknow'
+df_traffic$Victim.Sex[df_traffic$Victim.Sex == 'H'] <- 'Unknow'
+df_traffic$Victim.Sex[df_traffic$Victim.Sex == 'X'] <- 'Unknow'
+
+age_gender <- df_traffic %>% 
+  select(Victim.Sex, Victim.Age) %>% 
+  drop_na()
+
+
+Box_Whisker <- age_gender %>% 
+  plot_ly(x=~Victim.Sex, y=~Victim.Age, type = "box", color =~Victim.Sex, colors = "YlOrRd")|> layout(xaxis = list(title = "Gender"), yaxis = list(title = "Victim Age"), title =  "Age distribution by Gender")               
+
+Box_Whisker
+
+
+```
+The box and whisker plot shows the distribution of ages by gender that have been involved in a collision. We can see that Males have the highest average age of 40 followed by female with an age of 37 and ended of with unknown with an age of 19. The unknown gender can be attributed to gender not being reported. We can see that Males had the largest average range of age with a range of 29 to 52. The lines show the range of the ages and the dots show the outliers.
+
+```{r grouped, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+traffic_url =('/Users/geet/Downloads/Traffic_Collision_Data_from_2010_to_Present.csv')
+df_traffic <- read.csv(file=traffic_url, header= 1, sep = ",")
+
+
+df_traffic$Victim.Sex[df_traffic$Victim.Sex == 'M'] <- 'Male'
+df_traffic$Victim.Sex[df_traffic$Victim.Sex == 'F'] <- 'Female'
+df_traffic$Victim.Sex[df_traffic$Victim.Sex == 'N'] <- 'Unkown'
+df_traffic$Victim.Sex[df_traffic$Victim.Sex == ''] <- 'Unkown'
+df_traffic$Victim.Sex[df_traffic$Victim.Sex == 'H'] <- 'Unkown'
+df_traffic$Victim.Sex[df_traffic$Victim.Sex == 'X'] <- 'Unkown'
+
+df_age_bin_sex <- df_traffic %>% select(Victim.Sex, Victim.Age)  %>%drop_na() %>% mutate(age_bin = cut(Victim.Age, breaks=c(0,14,24,64,100))) %>% drop_na() %>% count(Victim.Sex,age_bin) %>% drop_na()
+
+colnames(df_age_bin_sex)[1] <- "Sex"
+colnames(df_age_bin_sex)[2] <- "Age_Group"
+colnames(df_age_bin_sex)[3] <- "Count"
+
+df_age_bin_sex$Age_Group <- as.character(df_age_bin_sex$Age_Group)
+
+df_age_bin_sex$Age_Group[df_age_bin_sex$Age_Group == '(0,14]'] <- 'Child'
+df_age_bin_sex$Age_Group[df_age_bin_sex$Age_Group == '(14,24]'] <- 'Youth'
+df_age_bin_sex$Age_Group[df_age_bin_sex$Age_Group == '(24,64]'] <- 'Adult'
+df_age_bin_sex$Age_Group[df_age_bin_sex$Age_Group == '(64,100]'] <- 'Senior'
+
+
+   
+                                       
+grouped_bar <-df_age_bin_sex %>% plot_ly(x = ~Age_Group, y = ~Count, color = ~Sex, colors = "YlOrRd") |> layout(xaxis = list(title = "Age Group"), yaxis = list(title = "Count"), title =  "Collisions by Gender and Age group")                             
+  
+                                      
+grouped_bar
+
+```
+
+The stacked bar chart compares the number of collisions within the age groups. We binned the ages into four categories namely, Child (1-14), Youth (15-25), Adult (26-64) and Senior(65-100). We compared the gender as well to find out which gender crashes more and found out that Adults aged 26 to 64 were more prone to getting into a collision. The Bar chart also shows the gender with yellow representing females, orange representing Males, and red representing the unknown. Also, the following stacked bar chart shows that the Adult males were undergoing more collisions.
+
+From the above section we can conclude that the Male adults have been prone to more collisions then the other sexes and age groups, and more specifically at the age of 30, we have the maximum collision occurrence and we have an outline where age 99 had around 8k collisions.
+
+ **Question 2: Report of collisions according to the Victim's descent (ethnicity)?**
+
+```{r Donut, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+traffic_url =('/Users/geet/Downloads/Traffic_Collision_Data_from_2010_to_Present.csv')
+df_traffic <- read.csv(file=traffic_url, header= 1, sep = ",")
+
+Descent_df <- df_traffic %>% select(Victim.Descent) %>% count(Victim.Descent) %>% drop_na() %>% arrange(desc(n)) %>% head(8)
+
+Descent_df$Victim.Descent[Descent_df$Victim.Descent == 'A'] <- 'Other Asian'
+Descent_df$Victim.Descent[Descent_df$Victim.Descent == 'B'] <- 'Black'
+Descent_df$Victim.Descent[Descent_df$Victim.Descent == 'C'] <- 'Chinese'
+Descent_df$Victim.Descent[Descent_df$Victim.Descent == 'D'] <- 'Cambodian'
+Descent_df$Victim.Descent[Descent_df$Victim.Descent == 'F'] <- 'Filipino'
+Descent_df$Victim.Descent[Descent_df$Victim.Descent == 'G'] <- 'Guamanian'
+Descent_df$Victim.Descent[Descent_df$Victim.Descent == 'H'] <- 'Hispanic/Latin/Mexican'
+Descent_df$Victim.Descent[Descent_df$Victim.Descent == 'I'] <- 'American Indian/Alaskan Native'
+Descent_df$Victim.Descent[Descent_df$Victim.Descent == 'J'] <- 'Japanese'
+Descent_df$Victim.Descent[Descent_df$Victim.Descent == 'K'] <- 'Korean'
+Descent_df$Victim.Descent[Descent_df$Victim.Descent == 'L'] <- 'Laotian'
+Descent_df$Victim.Descent[Descent_df$Victim.Descent == 'O'] <- 'Other'
+Descent_df$Victim.Descent[Descent_df$Victim.Descent == 'P'] <- 'Pacific Islander'
+Descent_df$Victim.Descent[Descent_df$Victim.Descent == 'S'] <- 'Samoan'
+Descent_df$Victim.Descent[Descent_df$Victim.Descent == 'U'] <- 'Hawaiian'
+Descent_df$Victim.Descent[Descent_df$Victim.Descent == 'V'] <- 'Vietnamese'
+Descent_df$Victim.Descent[Descent_df$Victim.Descent == 'W'] <- 'White'
+Descent_df$Victim.Descent[Descent_df$Victim.Descent == 'X'] <- 'Unknown'
+Descent_df$Victim.Descent[Descent_df$Victim.Descent == 'Z'] <- 'Asian Island'
+Descent_df$Victim.Descent[Descent_df$Victim.Descent == ''] <- 'Blank'
+Descent_df$Victim.Descent[Descent_df$Victim.Descent == '-'] <- 'Dash'
+
+
+Donut <- Descent_df %>% plot_ly(labels = Descent_df$Victim.Descent, values = ~Descent_df$n,  marker=list(colors=c("#ffffcc","#fed976" ,"#feb24c","#fd8d3c","#fc4e2a","#e31a1c","#bd0026","#800026")))
+Donut<- Donut %>% add_pie(hole = 0.6)
+
+Donut <- Donut %>% layout(title = "Composition of Top 10 Victim Descent with the percentage of total collision",  showlegend = T,
+                      xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                      yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+Donut
+
+```
+The donuts chart shows the composition of the Victim Descent by the total count. The large chunk of pie corresponds to the Hispanic/Latin/Mexican ethnicity making up 37.8% of the total followed by the White and the other categories. Their where a total of 21 descents, we chose to use the top 10 descent to show a summary of the major occurrences. 
+
+## **Section 2:  Exploring when collisions occur.**
+
+**Question 3:  In which year, month and time of day do the maximum or minimum collisions take place?**
+```{r Year, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+traffic_url =('/Users/geet/Downloads/Traffic_Collision_Data_from_2010_to_Present.csv')
+df_traffic <- read.csv(file=traffic_url, header= 1, sep = ",")
+
+new_year <-df_traffic %>% 
+mutate(Year_new = str_split(df_traffic$Date.Occurred, "/",simplify=TRUE)[,3])
+
+Count_of_year <- new_year %>% select(Year_new) %>% count(Year_new)
+colnames(Count_of_year)[2] <- "Count"
+
+DF_year <-  plot_ly(Count_of_year, x = ~Year_new, y = ~Count, type = 'scatter', mode = 'lines+markers', color = "orange")|> layout(xaxis = list(title = "Year"), yaxis = list(title = "Count"), title =  "Collisions per year")
+
+DF_year
+
+```
+
+
+```{r Month, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+traffic_url =('/Users/geet/Downloads/Traffic_Collision_Data_from_2010_to_Present.csv')
+df_traffic <- read.csv(file=traffic_url, header= 1, sep = ",")
+
+new_year <-df_traffic %>% 
+mutate(Year_new = str_split(df_traffic$Date.Occurred, "/",simplify=TRUE)[,3],Month_new = str_split(df_traffic$Date.Occurred, "/",simplify=TRUE)[,1])
+
+new_month <- new_year %>% select(Year_new, Month_new) %>% filter(Year_new == "2017") %>% count(Month_new)
+colnames(new_month)[2] <- "Count"
+
+Month_new1 <- factor(new_month$Month_new,levels =c(01,02,03,04,05,06,07,08,09,10,11,12))
+
+new_month$Month_new[new_month$Month_new == '1'] <- '01'
+new_month$Month_new[new_month$Month_new == '2'] <- '02'
+new_month$Month_new[new_month$Month_new == '3'] <- '03'
+new_month$Month_new[new_month$Month_new == '4'] <- '04'
+new_month$Month_new[new_month$Month_new == '5'] <- '05'
+new_month$Month_new[new_month$Month_new == '6'] <- '06'
+new_month$Month_new[new_month$Month_new == '7'] <- '07'
+new_month$Month_new[new_month$Month_new == '8'] <- '08'
+new_month$Month_new[new_month$Month_new == '9'] <- '09'
+
+new_month <- new_month %>% arrange(Month_new)
+     
+DF_month <-  plot_ly(new_month, x = ~Month_new, y = ~Count, type = 'scatter', mode = 'lines+markers', color = "orange")|> layout(xaxis = list(title = "Month"), yaxis = list(title = "Count"), title =  "Collisions per month in 2017")
+
+
+DF_month
+
+
+
+```
+
+The line chart shows the trend of total collisions which took place over the span of 2010-2023. We can easily see that the number to be constant in the initial years but, after 2014, there was a sudden hike in the count which remained almost the same til 2019. After the year 2019, there was a sudden decrease in the number of collisions.The maximum number of collisions took place in the year 2017 with 52,727 total collisions, after which we tried to investigate in which month these collisions took place in a particular year. The maximum number of collisions took place in the month of October (11) with 5,258 collisions, and the least were in the month of February.
+
+```{r radar, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+traffic_url =('/Users/geet/Downloads/Traffic_Collision_Data_from_2010_to_Present.csv')
+df_traffic <- read.csv(file=traffic_url, header= 1, sep = ",")
+ 
+
+areaName_df <- df_traffic %>% select(Time.Occurred) %>% drop_na() %>% mutate(time = cut(Time.Occurred, breaks=c(0,600 ,1200,1800,2400))) %>% drop_na() %>% count(time)
+
+areaName_df$time <- as.character(areaName_df$time)
+
+areaName_df$time[areaName_df$time == '(0,600]'] <- 'Morning'
+areaName_df$time[areaName_df$time == '(1.8e+03,2.4e+03]'] <- 'Noon'
+areaName_df$time[areaName_df$time == '(600,1.2e+03]'] <- 'Evening'
+areaName_df$time[areaName_df$time == '(1.2e+03,1.8e+03]'] <- 'Night'
+
+
+radar <- areaName_df %>% plot_ly(
+    type = 'scatterpolar',
+    r = c(69519, 156343, 146369, 214963),
+    theta = c('Morning','Noon','Evening', 'Night'),
+    fill = 'toself', color = "orange"
+  ) 
+radar <- radar %>%
+  layout(
+    polar = list(
+      radialaxis = list(
+        visible = T,
+        range = c(0,250000)
+      )
+    ),
+    showlegend = F
+  )
+
+radar
+```
+The radar chart above shows the distribution of crashes during the different times of day. The data presented time in military time and we grouped it as Morning 12 am-6 am, Noon 6 am-12 pm, Evening is 12pm-6 pm and Night is 6 pm-12 am. The radar chart shows us that the majority of crashes occur at Night (214,963 crashes), followed by Noon (156,343 crashes), then Evening (146,369 crashes) and lastly Morning (69,519 crashes). 
+
+In conclusion we are able to see that the year 2017 had the most collision of which they happened primarily in October. We can also assume that a large amount of these accidents happened at night as the vast majority of accidents happen then as can be seen by the radar chart.
+
+
+## **Section 3: Exploring the what areas collisions happen in.**
+
+**Question 4. Which is the most collision-prone area?**
+
+```{r sidebar, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+traffic_url =('/Users/geet/Downloads/Traffic_Collision_Data_from_2010_to_Present.csv')
+df_traffic <- read.csv(file=traffic_url, header= 1, sep = ",")
+
+
+side_bar <- df_traffic %>% plot_ly(y = ~Area.Name, type = "histogram", color = ~Area.Name, colors = "YlOrRd")|> layout(xaxis = list(title = "Count"), yaxis = list(title = "Area"), title =  "Total Collsion by area")
+
+
+areaName_df$time <- as.character(areaName_df$time)
+
+areaName_df$time[areaName_df$time == '(0,600]'] <- 'Morning'
+areaName_df$time[areaName_df$time == '(1.8e+03,2.4e+03]'] <- 'Noon'
+areaName_df$time[areaName_df$time == '(600,1.2e+03]'] <- 'Evening'
+areaName_df$time[areaName_df$time == '(1.2e+03,1.8e+03]'] <- 'Night'
+
+side_bar
+
+```
+The horizontal bar-chart shows the most affected areas by count. The most adverse area was found to be 77th Street which had 39,182 collisions followed by Southwest having 34,535 collision. The area which was had the least number of collision was Hollyhock and Rampart. 
+
+```{r map, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+traffic_url =('/Users/geet/Downloads/Traffic_Collision_Data_from_2010_to_Present.csv')
+df_traffic <- read.csv(file=traffic_url, header= 1, sep = ",")
+
+region <- df_traffic %>% select(Reporting.District) %>% count(Reporting.District)
+
+df_traffic$Location <- gsub("[()]", "", df_traffic$Location)    # Apply gsub function
+df_traffic2 <- df_traffic[c('lat', 'long')] <- str_split_fixed(df_traffic$Location,',',2)
+
+new <-as.data.frame(df_traffic2)
+new$V1 <- as.numeric(new$V1)
+new$V2 <- as.numeric(new$V2)
+
+la_map <- get_map(getbb('los angeles'), maptype='terrain', source="stamen", zoom = 10)
+
+ggmap(la_map)+
+ geom_point(data = new , aes(x = V2, y = V1), color = "red",size=0.05,  alpha=1/100)+
+  ggtitle("Los Angeles Map Example")
+
+```
+
+
+The map chart above uses the longitude and latitude of the crashes to mark where a crash occurred. We are able to see that a large amount of crashes have occurred near the Los Angeles center with a line going down towards Long beach. This line follows a major highway as can be seen by the dark grey line on the map therefor it makes sense that a large amount of crashes would occur here. We see that there is another area filled with crashes near to the 34.2 latitude we can see a fainter color which means that crashes occurred but scattered around the area. This is explained because this is a less common area than the inner city of Los Angeles.
+
+In conclusion These two charts show us that the majority of the accidents occur near the center of LA near 77th street and southwest street. This makes is explained by the fact that this is a very popular area and has a lot of traffic on a regular basis.
+
+## **Conclusion:**
+
+Through our findings we were able to utilize the data set to compare the different genders, ages, areas and times of when accidents occur. We learned that Adult Men specifically age 30 with a Hispanic/Latin/Mexican descent are prone to collisions. We also learned that the most collisions occurred in 2017  with a total of 52,727 collisions, and within 2017 most of those accidents occur in October with 5,258 collisions. We are also able to conclude that the majority of those accidents happened at night. Finally, we are able to discover what areas are most prone to having accidents and we see that the majority of accidents happened near the 77th street and Southwest block having 39,182 and 34,535 collisions respectively. 
+
+
+
+## Citation: 
+[1] "Traffic Deaths Rise Again in 2022 with Marked Increase in Pedestrian Fatalities." Los Angeles Times, 14 Jan. 2023. [Online]. Available: https://www.latimes.com/california/story/2023-01-14/traffic-deaths-rise-again-in-2022-with-marked-increase-in-pedestrian-fatalities. [Accessed: 12-Feb-2023].
+[2]Statista. "Road Accidents in the US." Statista, [Online]. Available: https://www.statista.com/topics/3708/road-accidents-in-the-us/#topicOverview. [Accessed: 12-Feb-2023].
